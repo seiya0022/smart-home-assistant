@@ -1,0 +1,74 @@
+services:
+  # Smart home control hub
+  homeassistant:
+    container_name: homeassistant
+    image: ghcr.io/home-assistant/home-assistant:stable
+    volumes:
+      - ./homeassistant/config:/config
+      - /etc/localtime:/etc/localtime:ro
+    restart: unless-stopped
+    network_mode: host
+
+  # Speech-to-text: transcribe voice to text (Whisper)
+  wyoming-whisper:
+    container_name: wyoming-whisper
+    image: rhasspy/wyoming-whisper
+    ports:
+      - "10300:10300"
+    volumes:
+      - ./whisper:/data
+    command: --model base-int8 --language auto
+    restart: unless-stopped
+    networks:
+      - voice
+
+  # Text-to-speech: synthesize voice from text (Piper)
+  wyoming-piper:
+    container_name: wyoming-piper
+    image: rhasspy/wyoming-piper
+    ports:
+      - "10200:10200"
+    volumes:
+      - ./piper:/data
+    command: --voice ja_JP-htm-medium
+    restart: unless-stopped
+    networks:
+      - voice
+
+  # Wake word detection
+  wyoming-openwakeword:
+    container_name: wyoming-openwakeword
+    image: rhasspy/wyoming-openwakeword
+    ports:
+      - "10400:10400"
+    command: --preload-model 'hey_jarvis'
+    restart: unless-stopped
+    networks:
+      - voice
+
+  # Microphone/satellite: captures audio from ThinkPad mic
+  wyoming-satellite:
+    container_name: wyoming-satellite
+    image: rhasspy/wyoming-satellite
+    ports:
+      - "10700:10700"
+    devices:
+      - /dev/snd:/dev/snd
+    group_add:
+      - audio
+    command: >
+      --name 'ThinkPad'
+      --uri 'tcp://0.0.0.0:10700'
+      --mic-command 'arecord -D ${MIC_DEVICE:-default} -r 16000 -c 1 -f S16_LE -t raw'
+      --snd-command 'aplay -D ${SND_DEVICE:-default} -r 22050 -c 1 -f S16_LE -t raw'
+      --wake-uri 'tcp://wyoming-openwakeword:10400'
+      --wake-word-name 'hey_jarvis'
+    restart: unless-stopped
+    depends_on:
+      - wyoming-openwakeword
+    networks:
+      - voice
+
+networks:
+  voice:
+    driver: bridge

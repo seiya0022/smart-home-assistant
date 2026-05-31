@@ -1,0 +1,9 @@
+homeassistant:
+  name: Smart Home
+  time_zone: Asia/Tokyo
+  unit_system: metric
+
+default_config:
+
+automation: !include automations.yaml
+script: !include scripts.yaml
