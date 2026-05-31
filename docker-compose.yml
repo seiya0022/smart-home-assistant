@@ -30,7 +30,8 @@ services:
       - "10200:10200"
     volumes:
       - ./piper:/data
-    command: --voice ja_JP-htm-medium
+  # command: --voice ja_JP-htm-medium
+    command: --voice en_US-amy-medium --data-dir /data
     restart: unless-stopped
     networks:
       - voice
