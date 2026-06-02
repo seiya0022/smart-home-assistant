@@ -217,9 +217,16 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# Home Assistant runtime data
-homeassistant/config/.storage/
-homeassistant/config/home-assistant_v2.db
+# Home Assistant runtime data (ignore everything under config/)
+homeassistant/config/*
+!homeassistant/config/configuration.yaml
+!homeassistant/config/automations.yaml
+!homeassistant/config/scripts.yaml
+!homeassistant/config/secrets.yaml.example
+!homeassistant/config/packages/
+!homeassistant/config/packages/**
+
+# Secrets (never commit)
 homeassistant/config/secrets.yaml
 
 # AI model caches (large downloads)
