@@ -254,6 +254,27 @@ If this fails:
 - Use a model that supports tool/function calling (`qwen2.5:3b`, `llama3.2`, etc.).
 - Device control via Ollama is experimental in Home Assistant; keep commands simple at first.
 
+### Voice works in chat, but microphone times out (Ollama says: "pending request cancelled or timed out")
+
+If you see this in the **Mac Mini Ollama server logs**:
+
+- `pending request cancelled or timed out, skipping scheduling`
+
+it means the **client disconnected before Ollama finished**. In this setup, the client is typically Home Assistant's voice pipeline (Assist). Chat can succeed while voice fails because voice has tighter end-to-end timing constraints (STT + LLM + TTS).
+
+Fixes that usually help:
+
+- **Use a smaller model for voice**: prefer `qwen2.5:3b` or `llama3.2:3b` instead of `qwen2.5:7b`.
+- **Reduce context and history** for the voice conversation agent (e.g. `num_ctx <= 2048`, history `0-2`).
+- **Expose fewer entities** (start with a handful) if **Control Home Assistant** is enabled, because it increases prompt size.
+- **Enable Prefer local intents** in the Voice Assistant pipeline so simple commands are handled locally without the LLM.
+
+Measure Ollama latency from the ThinkPad:
+
+```bash
+./scripts/benchmark-ollama.sh
+```
+
 ### STT language / TTS voice
 
 - Whisper uses `--language auto` for Japanese and English detection.
