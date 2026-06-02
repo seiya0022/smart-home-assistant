@@ -1,7 +1,14 @@
 homeassistant:
   name: Smart Home
-  time_zone: Asia/Tokyo
+  time_zone: Europe/Prague
   unit_system: metric
+
+logger:
+  default: info
+  logs:
+    homeassistant.components.assist_pipeline: debug
+    homeassistant.components.ollama: debug
+    homeassistant.components.wyoming: debug
 
 default_config:
 
