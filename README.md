@@ -130,7 +130,7 @@ Complete the [Home Assistant UI configuration](#home-assistant-ui-configuration)
 
 Home Assistant uses `network_mode: host` to reach smart devices on the LAN. Wyoming services publish ports on `127.0.0.1` for HA to connect.
 
-> **Note:** `rhasspy/wyoming-satellite` is deprecated in favor of ESPHome-based voice hardware. It remains the practical way to use the ThinkPad built-in mic from Docker. You can migrate to an ESP32-S3 voice satellite later without changing the rest of the stack.
+> **Note:** The Wyoming satellite image used here is `sker65/wyoming-satellite` (community-maintained). It is still a practical way to use the ThinkPad built-in mic from Docker. You can migrate to an ESP32-S3 voice satellite later without changing the rest of the stack.
 
 ## Home Assistant UI configuration
 
