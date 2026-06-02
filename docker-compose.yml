@@ -50,7 +50,7 @@ services:
   # Microphone/satellite: captures audio from ThinkPad mic
   wyoming-satellite:
     container_name: wyoming-satellite
-    image: rhasspy/wyoming-satellite
+    image: sker65/wyoming-satellite
     ports:
       - "10700:10700"
     devices:
