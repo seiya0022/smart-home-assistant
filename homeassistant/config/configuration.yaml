@@ -7,8 +7,8 @@ logger:
   default: info
   logs:
     homeassistant.components.assist_pipeline: debug
-    homeassistant.components.ollama: debug
-    homeassistant.components.wyoming: debug
+    homeassistant.components.ollama: info
+    homeassistant.components.wyoming: info
 
 default_config:
 

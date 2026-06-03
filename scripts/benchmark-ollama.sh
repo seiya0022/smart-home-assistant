@@ -2,7 +2,7 @@
 set -euo pipefail
 
 OLLAMA_URL="${OLLAMA_URL:-http://10.0.0.15:11434}"
-OLLAMA_MODEL="${OLLAMA_MODEL:-qwen2.5:7b}"
+OLLAMA_MODEL="${OLLAMA_MODEL:-qwen2.5:3b}"
 PROMPT="${PROMPT:-Return only: OK}"
 
 echo "Ollama URL:   ${OLLAMA_URL}"
