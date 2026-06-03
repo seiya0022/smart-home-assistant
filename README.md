@@ -265,15 +265,27 @@ it means the **client disconnected before Ollama finished**. In this setup, the 
 Fixes that usually help:
 
 - **Use a smaller model for voice**: prefer `qwen2.5:3b` or `llama3.2:3b` instead of `qwen2.5:7b`.
-- **Reduce context and history** for the voice conversation agent (e.g. `num_ctx <= 2048`, history `0-2`).
+- **Reduce context and history** for the voice conversation agent (e.g. `num_ctx <= 2048`, `max_history` `0-1` for voice).
 - **Expose fewer entities** (start with a handful) if **Control Home Assistant** is enabled, because it increases prompt size.
 - **Enable Prefer local intents** in the Voice Assistant pipeline so simple commands are handled locally without the LLM.
+- **Increase wake refractory** on `wyoming-satellite` (`--wake-refractory-seconds 8`) to reduce back-to-back wake detections that overlap Assist pipelines.
+- **Run in daemon mode** (`docker compose up -d`); avoid foreground `docker compose up` during normal use so Ctrl+C does not stop the satellite.
 
-Measure Ollama latency from the ThinkPad:
+Measure Ollama latency from the ThinkPad (same path Home Assistant uses over LAN):
 
 ```bash
 ./scripts/benchmark-ollama.sh
 ```
+
+Target: single-turn `elapsed_sec` under **2 seconds** with the model already warm on the Mac Mini (`ollama run qwen2.5:3b` or `keep_alive: -1` in HA).
+
+Voice verification checklist (after changes):
+
+1. ThinkPad benchmark under 2s; no `pending request cancelled` on the Mac Mini.
+2. `docker compose up -d` and wait ~30s for Wyoming to connect.
+3. Say `hey_jarvis`, ask a short question, wait for TTS to finish.
+4. Ask a second short question; confirm you hear a reply both times.
+5. In logs: HA shows `conversation result`; satellite shows `synthesize`; no `Connection reset by peer`.
 
 ### STT language / TTS voice
 
