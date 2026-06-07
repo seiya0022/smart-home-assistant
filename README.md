@@ -310,6 +310,52 @@ docker compose up -d --force-recreate
 
 Back up `homeassistant/config/` regularly (excluding `.storage` is optional; including it preserves UI integration config).
 
+### 24/7 Operation (Ubuntu Laptop)
+
+Configure Ubuntu to keep running when the laptop lid is closed.
+
+#### 🔴 【24/7 ON】 Keep running when lid is closed (Ignore lid switch)
+
+**Step 1:** Open the configuration file
+
+```bash
+sudo nano /etc/systemd/logind.conf
+```
+
+**Step 2:** Find the line under `[Login]` and change it (remove the leading `#`).
+
+- Before: `#HandleLidSwitch=suspend`
+- After: **`HandleLidSwitch=ignore`**
+
+**Step 3:** Save and close (`Ctrl + O` ➔ `Enter` ➔ `Ctrl + X`)
+
+**Step 4:** Apply the changes to the system
+
+```bash
+sudo systemctl restart systemd-logind
+```
+
+#### 🟢 【Revert】 Sleep when lid is closed (Default)
+
+**Step 1:** Open the configuration file
+
+```bash
+sudo nano /etc/systemd/logind.conf
+```
+
+**Step 2:** Revert the line back to default (add `#` and change to `suspend`).
+
+- Before: `HandleLidSwitch=ignore`
+- After: **`#HandleLidSwitch=suspend`**
+
+**Step 3:** Save and close (`Ctrl + O` ➔ `Enter` ➔ `Ctrl + X`)
+
+**Step 4:** Apply the changes to the system
+
+```bash
+sudo systemctl restart systemd-logind
+```
+
 ## Future extensions
 
 - **ESPHome voice satellite:** replace `wyoming-satellite` with dedicated hardware in other rooms.
