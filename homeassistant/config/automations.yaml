@@ -1,1 +1,36 @@
-[]
+- id: '1780515552144'
+  alias: play music from spotify
+  description: ''
+  triggers:
+  - trigger: conversation
+    command:
+    - play spotify
+    - open Spotify
+    - play some music
+    - play music
+  conditions: []
+  actions:
+  - action: media_player.media_play
+    metadata: {}
+    data: {}
+    target:
+      device_id: 9f82d15da379e0ab7694d0ed8c96db49
+  mode: single
+- id: '1780692557492'
+  alias: to stop spotify
+  description: ''
+  triggers:
+  - trigger: conversation
+    command:
+    - stop
+    - stop the music
+    - pause
+    - pause the music
+  conditions: []
+  actions:
+  - action: media_player.media_pause
+    metadata: {}
+    data: {}
+    target:
+      device_id: 9f82d15da379e0ab7694d0ed8c96db49
+  mode: single
