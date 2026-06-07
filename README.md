@@ -325,7 +325,9 @@ sudo nano /etc/systemd/logind.conf
 **Step 2:** Find the line under `[Login]` and change it (remove the leading `#`).
 
 - Before: `#HandleLidSwitch=suspend`
+          `#HandleLidSwhitchExternalPower=suspend`
 - After: **`HandleLidSwitch=ignore`**
+         **`HandleLidSwhitchExternalPower=ignore`**
 
 **Step 3:** Save and close (`Ctrl + O` ➔ `Enter` ➔ `Ctrl + X`)
 
