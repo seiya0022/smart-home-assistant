@@ -64,7 +64,10 @@ services:
       --snd-command 'aplay -D ${SND_DEVICE:-default} -r 22050 -c 1 -f S16_LE -t raw'
       --wake-uri 'tcp://wyoming-openwakeword:10400'
       --wake-word-name 'hey_jarvis'
-      --wake-refractory-seconds 8
+      --vad                      
+      --vad-threshold=0.6        
+      --wake-refractory-seconds=8
+    # --wake-refractory-seconds 8
     restart: unless-stopped
     depends_on:
       - wyoming-openwakeword
