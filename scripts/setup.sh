@@ -35,6 +35,7 @@ docker compose up -d
 
 echo
 echo "Setup complete. Next steps:"
-echo "  1. Open Home Assistant at http://<this-machine-ip>:8123"
-echo "  2. Follow README.md to configure Wyoming integrations and Ollama"
-echo "  3. Run scripts/detect-audio.sh if wake word / mic does not work"
+echo "  1. Run ./scripts/install-wyoming-satellite.sh to install the voice satellite on the host."
+echo "  2. Open Home Assistant at http://<this-machine-ip>:8123"
+echo "  3. Follow README.md to configure Wyoming integrations and Ollama"
+echo "  4. Run scripts/detect-audio.sh if wake word / mic does not work"

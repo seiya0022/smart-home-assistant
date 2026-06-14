@@ -7,13 +7,15 @@ Fully local smart home voice assistant running on Ubuntu (ThinkPad). Home Assist
 ```mermaid
 flowchart LR
   subgraph ubuntu [ThinkPad Ubuntu]
-    Mic[ThinkPad Mic]
-    Sat[wyoming-satellite]
+    Mic[Mic or USB Audio]
+    PW[PipeWire or Pulse]
+    Sat[wyoming-satellite host]
     Wake[wyoming-openwakeword]
     STT[wyoming-whisper]
     TTS[wyoming-piper]
     HA[Home Assistant]
-    Mic --> Sat
+    Mic --> PW
+    PW --> Sat
     Sat -->|"hey_jarvis"| Wake
     Wake --> Sat
     Sat --> STT
@@ -31,8 +33,8 @@ flowchart LR
 
 **Voice flow**
 
-1. `wyoming-satellite` listens on the ThinkPad microphone 24/7.
-2. `wyoming-openwakeword` detects the wake word `hey_jarvis`.
+1. `wyoming-satellite`（ThinkPad 本体の systemd サービス）がマイク入力を待ち受ける。
+2. `wyoming-openwakeword`（Docker）がウェイクワード `hey_jarvis` を検出する。
 3. `wyoming-whisper` transcribes speech (Japanese/English auto-detection).
 4. Home Assistant Assist sends the text to Ollama on the Mac Mini.
 5. Ollama (with **Control Home Assistant** enabled) operates exposed entities.
@@ -44,6 +46,7 @@ flowchart LR
 
 - Ubuntu with Docker and Docker Compose
 - Built-in or USB microphone and speakers
+- PipeWire/PulseAudio（Ubuntu デスクトップでは通常プリインストール）
 - `alsa-utils` for audio device detection: `sudo apt install alsa-utils`
 - LAN access to the Mac Mini
 
@@ -87,12 +90,19 @@ Run first-time setup:
 ./scripts/setup.sh
 ```
 
+Install the voice satellite on the ThinkPad host (one-time):
+
+```bash
+./scripts/install-wyoming-satellite.sh
+```
+
 Edit `.env` with your Mac Mini IP and audio devices:
 
 ```bash
-./scripts/detect-audio.sh   # find MIC_DEVICE / SND_DEVICE
+./scripts/detect-audio.sh   # confirm MIC_DEVICE / SND_DEVICE (default: pulse)
 nano .env
-docker compose up -d        # apply .env changes
+./scripts/restart-wyoming-satellite.sh   # apply .env audio changes
+docker compose up -d        # start Docker services
 ```
 
 Open Home Assistant: `http://<thinkpad-ip>:8123`
@@ -107,6 +117,9 @@ Complete the [Home Assistant UI configuration](#home-assistant-ui-configuration)
 ├── .env.example
 ├── scripts/
 │   ├── setup.sh
+│   ├── install-wyoming-satellite.sh
+│   ├── restart-wyoming-satellite.sh
+│   ├── wyoming-satellite-logs.sh
 │   └── detect-audio.sh
 ├── homeassistant/
 │   └── config/
@@ -118,19 +131,21 @@ Complete the [Home Assistant UI configuration](#home-assistant-ui-configuration)
 └── piper/            # Piper voice model cache (auto-downloaded)
 ```
 
+`wyoming-satellite` 本体は `~/wyoming-satellite` に clone され、user systemd サービスとして常駐します。
+
 ## Docker services
 
-| Service | Port | Role |
-|---------|------|------|
-| `homeassistant` | 8123 (host) | Smart home hub, Assist pipeline |
-| `wyoming-whisper` | 10300 | Speech-to-text |
-| `wyoming-piper` | 10200 | Text-to-speech (Japanese) |
-| `wyoming-openwakeword` | 10400 | Wake word (`hey_jarvis`) |
-| `wyoming-satellite` | 10700 | Microphone input / speaker output |
+| Service | Port | Role | Runtime |
+|---------|------|------|---------|
+| `homeassistant` | 8123 (host) | Smart home hub, Assist pipeline | Docker |
+| `wyoming-whisper` | 10300 | Speech-to-text | Docker |
+| `wyoming-piper` | 10200 | Text-to-speech (Japanese) | Docker |
+| `wyoming-openwakeword` | 10400 | Wake word (`hey_jarvis`) | Docker |
+| `wyoming-satellite` | 10700 | Microphone input / speaker output | **Host (systemd)** |
 
 Home Assistant uses `network_mode: host` to reach smart devices on the LAN. Wyoming services publish ports on `127.0.0.1` for HA to connect.
 
-> **Note:** The Wyoming satellite image used here is `sker65/wyoming-satellite` (community-maintained). It is still a practical way to use the ThinkPad built-in mic from Docker. You can migrate to an ESP32-S3 voice satellite later without changing the rest of the stack.
+> **Note:** `wyoming-satellite` runs on the ThinkPad host (not Docker) for stable USB audio hot-plug via PipeWire/Pulse `pulse` device. The upstream [rhasspy/wyoming-satellite](https://github.com/rhasspy/wyoming-satellite) project is deprecated; [Linux Voice Assistant](https://github.com/OHF-Voice/linux-voice-assistant) is the successor. This host install keeps the current Wyoming stack working. You can migrate to ESP32-S3 or LVA later without changing the rest of the stack.
 
 ## Home Assistant UI configuration
 
@@ -192,8 +207,8 @@ Copy `.env.example` to `.env`:
 | Variable | Description |
 |----------|-------------|
 | `TZ` | Timezone (default `Asia/Tokyo`) |
-| `MIC_DEVICE` | ALSA device for microphone (`default` or `plughw:...`) |
-| `SND_DEVICE` | ALSA device for speaker output |
+| `MIC_DEVICE` | ALSA device for microphone (`pulse` recommended; or `default`, `plughw:...`) |
+| `SND_DEVICE` | ALSA device for speaker output (`pulse` recommended) |
 | `MAC_MINI_IP` | Reference IP for Ollama (configured in HA UI) |
 | `OLLAMA_MODEL` | Reference model name (configured in HA UI) |
 
@@ -206,7 +221,7 @@ docker compose ps
 docker compose logs wyoming-whisper
 docker compose logs wyoming-piper
 docker compose logs wyoming-openwakeword
-docker compose logs wyoming-satellite
+./scripts/wyoming-satellite-logs.sh
 ```
 
 Ensure ports `10200`, `10300`, `10400`, `10700` are listening:
@@ -219,19 +234,30 @@ Add integrations manually with `127.0.0.1` and the port above.
 
 ### Wake word or microphone not working
 
-1. Run `./scripts/detect-audio.sh` and set `MIC_DEVICE` / `SND_DEVICE` in `.env`.
+1. Run `./scripts/detect-audio.sh` and set `MIC_DEVICE` / `SND_DEVICE` in `.env` (default: `pulse`).
 2. Confirm the user is in the `audio` group: `groups` (add with `sudo usermod -aG audio $USER` if needed).
-3. Restart the satellite: `docker compose restart wyoming-satellite`.
-4. Check logs: `docker compose logs -f wyoming-satellite`.
+3. Restart the satellite: `./scripts/restart-wyoming-satellite.sh`.
+4. Check logs: `./scripts/wyoming-satellite-logs.sh`.
 
-Test capture on the host (outside Docker):
+Test capture on the host:
 
 ```bash
-arecord -D plughw:CARD=PCH,DEV=0 -d 3 -f S16_LE -r 16000 test.wav
+arecord -D pulse -d 3 -f S16_LE -r 16000 test.wav
 aplay test.wav
 ```
 
-Replace the device string with your `MIC_DEVICE` value.
+Replace `pulse` with your `MIC_DEVICE` value if you use a fixed ALSA device.
+
+### USB microphone or speaker hot-plug
+
+`MIC_DEVICE=pulse` and `SND_DEVICE=pulse` route audio through PipeWire/Pulse and follow the OS default input/output.
+
+1. Plug in or unplug USB audio.
+2. Open **Settings → Sound** and set the default input/output device.
+3. Test with `arecord -D pulse -d 2 -f S16_LE -r 16000 test.wav`.
+4. If wake word or playback still fails, run `./scripts/restart-wyoming-satellite.sh`.
+
+For fixed hardware access (less hot-plug friendly), use `plughw:CARD=...,DEV=0` from `./scripts/detect-audio.sh`.
 
 ### Ollama connection failed
 
@@ -268,8 +294,8 @@ Fixes that usually help:
 - **Reduce context and history** for the voice conversation agent (e.g. `num_ctx <= 2048`, `max_history` `0-1` for voice).
 - **Expose fewer entities** (start with a handful) if **Control Home Assistant** is enabled, because it increases prompt size.
 - **Enable Prefer local intents** in the Voice Assistant pipeline so simple commands are handled locally without the LLM.
-- **Increase wake refractory** on `wyoming-satellite` (`--wake-refractory-seconds 8`) to reduce back-to-back wake detections that overlap Assist pipelines.
-- **Run in daemon mode** (`docker compose up -d`); avoid foreground `docker compose up` during normal use so Ctrl+C does not stop the satellite.
+- **Increase wake refractory** on `wyoming-satellite` (`--wake-refractory-seconds 8`, set in the host systemd service) to reduce back-to-back wake detections that overlap Assist pipelines.
+- **Run Docker in daemon mode** (`docker compose up -d`); the host satellite runs as a user systemd service and restarts automatically.
 
 Measure Ollama latency from the ThinkPad (same path Home Assistant uses over LAN):
 
@@ -282,7 +308,7 @@ Target: single-turn `elapsed_sec` under **2 seconds** with the model already war
 Voice verification checklist (after changes):
 
 1. ThinkPad benchmark under 2s; no `pending request cancelled` on the Mac Mini.
-2. `docker compose up -d` and wait ~30s for Wyoming to connect.
+2. `docker compose up -d` and confirm the host satellite is running: `systemctl --user status wyoming-satellite`.
 3. Say `hey_jarvis`, ask a short question, wait for TTS to finish.
 4. Ask a second short question; confirm you hear a reply both times.
 5. In logs: HA shows `conversation result`; satellite shows `synthesize`; no `Connection reset by peer`.
@@ -295,18 +321,40 @@ Voice verification checklist (after changes):
 ## Operations
 
 ```bash
-# Start all services
+# Start Docker services
 docker compose up -d
 
-# Stop all services
+# Stop Docker services (host satellite keeps running)
 docker compose down
 
-# View logs
+# View Docker logs
 docker compose logs -f
 
-# Restart after config change
+# Host satellite status / logs / restart
+systemctl --user status wyoming-satellite
+./scripts/wyoming-satellite-logs.sh
+./scripts/restart-wyoming-satellite.sh
+
+# Restart after Docker config change
 docker compose up -d --force-recreate
 ```
+
+Daily startup: `docker compose up -d` only. The host `wyoming-satellite` service starts automatically at login (or boot if `loginctl enable-linger` is enabled during install).
+
+### Migrate from Docker satellite
+
+If you previously ran `wyoming-satellite` in Docker:
+
+```bash
+docker compose stop wyoming-satellite
+docker compose rm -f wyoming-satellite
+docker compose up -d
+# Set MIC_DEVICE=pulse and SND_DEVICE=pulse in .env
+./scripts/install-wyoming-satellite.sh
+ss -tlnp | grep 10700
+```
+
+Then test wake word and TTS. USB hot-plug: switch defaults in **Settings → Sound**; restart with `./scripts/restart-wyoming-satellite.sh` if needed.
 
 Back up `homeassistant/config/` regularly (excluding `.storage` is optional; including it preserves UI integration config).
 
@@ -360,7 +408,7 @@ sudo systemctl restart systemd-logind
 
 ## Future extensions
 
-- **ESPHome voice satellite:** replace `wyoming-satellite` with dedicated hardware in other rooms.
+- **ESPHome voice satellite** or **Linux Voice Assistant:** replace host `wyoming-satellite` with dedicated hardware or the LVA successor stack.
 - **Second Piper instance:** English TTS for bilingual responses.
 - **Custom bridge API:** if HA Ollama integration is insufficient, add a small Python service between STT and device actions.
 
