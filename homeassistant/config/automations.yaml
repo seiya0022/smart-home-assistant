@@ -10,6 +10,37 @@
     - play music
   conditions: []
   actions:
+  - action: media_player.select_source
+    metadata: {}
+    target:
+      device_id: 9f82d15da379e0ab7694d0ed8c96db49
+    data:
+      source: seiya-asai-ThinkPad-X1-Carbon-5th
+    alias: Select thinkpad spotify
+    enabled: false
+  - action: media_player.select_source
+    metadata: {}
+    target:
+      device_id: 9f82d15da379e0ab7694d0ed8c96db49
+    data:
+      source: Lenovo Tab M10 FHD Plus
+    alias: Select Lenovo tablet spotify
+    enabled: false
+  - action: media_player.select_source
+    metadata: {}
+    target:
+      device_id: 9f82d15da379e0ab7694d0ed8c96db49
+    data:
+      source: Seiya's Fire TV
+    alias: Select fireTV spotify
+    enabled: false
+  - action: media_player.select_source
+    metadata: {}
+    target:
+      device_id: 9f82d15da379e0ab7694d0ed8c96db49
+    data:
+      source: Seiya’s Mac mini
+    alias: Select Mac mini spotify
   - action: media_player.media_play
     metadata: {}
     data: {}
