@@ -122,6 +122,9 @@ Complete the [Home Assistant UI configuration](#home-assistant-ui-configuration)
 │   ├── wyoming-satellite-logs.sh
 │   ├── audio-duck.sh
 │   └── detect-audio.sh
+├── assets/
+│   └── sounds/
+│       └── awake.wav   # optional wake chime (user-provided, not in git)
 ├── homeassistant/
 │   └── config/
 │       ├── configuration.yaml
@@ -165,6 +168,7 @@ Home Assistant uses `network_mode: host` to reach smart devices on the LAN. Wyom
 | `AUDIO_DUCK_ENABLED` | `1` で有効、`0` で無効 |
 | `DUCK_LEVEL` | 他アプリの音量（例: `20%`） |
 | `DUCK_TIMEOUT` | 自動復元までの秒数（デフォルト `40`） |
+| `AWAKE_WAV` | ウェイク効果音 WAV のパス（リポジトリルート相対。ファイル無しなら無音） |
 
 前提パッケージ: `pulseaudio-utils`（`pactl` コマンド。PipeWire 環境でも利用可）
 
@@ -176,10 +180,38 @@ sudo apt install -y pulseaudio-utils
 
 ```bash
 ./scripts/install-wyoming-satellite.sh   # 初回またはテンプレート変更時
-./scripts/restart-wyoming-satellite.sh # .env のみ変更時
+./scripts/restart-wyoming-satellite.sh # .env のみ変更時（DUCK_* など）
 ```
 
-**将来のウェイク音:** `assets/awake.wav` を用意し、`scripts/wyoming-satellite.service.template` のコメントアウトされた `--awake-wav` 行を有効化すると、検出時に「ポン」などの待機音を鳴らせます（現時点では未使用）。
+### ウェイク効果音（Hey Jarvis 検出時）
+
+`hey_jarvis` を検出した瞬間に短い効果音を鳴らせます。音源はユーザーが配置します。
+
+| 項目 | 内容 |
+|------|------|
+| 形式 | **WAV（PCM）** — MP3 は非対応 |
+| 推奨仕様 | 16-bit mono, 22050 Hz, 0.15〜0.3 秒程度 |
+| 配置先 | `assets/sounds/awake.wav` |
+| 設定 | `.env` の `AWAKE_WAV=assets/sounds/awake.wav` |
+
+**ファイルが無い場合**: 効果音は鳴らさず、satellite は通常起動します（ducking のみ動作）。
+
+効果音は TTS と同じ `aplay` 経由で再生されるため、**音量ダッキングの対象外**です（他アプリだけが下がり、効果音は通常音量）。
+
+```bash
+# 1. 音源を配置
+cp /path/to/your-chime.wav assets/sounds/awake.wav
+
+# 2. install を再実行（--awake-wav をサービスに反映）
+systemctl --user stop wyoming-satellite
+./scripts/install-wyoming-satellite.sh
+```
+
+MP3 から変換する場合（任意）:
+
+```bash
+ffmpeg -i input.mp3 -ar 22050 -ac 1 assets/sounds/awake.wav
+```
 
 ## Home Assistant UI configuration
 
@@ -246,6 +278,7 @@ Copy `.env.example` to `.env`:
 | `AUDIO_DUCK_ENABLED` | Enable volume ducking for other apps during Assist (`1` / `0`) |
 | `DUCK_LEVEL` | Target volume for ducked apps (e.g. `20%`) |
 | `DUCK_TIMEOUT` | Seconds before auto-restoring volume if Assist does not finish |
+| `AWAKE_WAV` | Path to wake chime WAV (relative to repo root; omitted if file missing) |
 | `MAC_MINI_IP` | Reference IP for Ollama (configured in HA UI) |
 | `OLLAMA_MODEL` | Reference model name (configured in HA UI) |
 

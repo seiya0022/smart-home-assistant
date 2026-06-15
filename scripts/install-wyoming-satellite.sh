@@ -9,6 +9,10 @@ SERVICE_NAME="wyoming-satellite.service"
 SERVICE_DIR="$HOME/.config/systemd/user"
 TEMPLATE="$ROOT/scripts/wyoming-satellite.service.template"
 
+escape_sed_replacement() {
+  printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/&/\\&/g' -e 's/|/\\|/g'
+}
+
 missing_packages=()
 for pkg in python3-venv python3-pip alsa-utils pulseaudio-utils; do
   if ! dpkg -s "$pkg" >/dev/null 2>&1; then
@@ -43,6 +47,7 @@ set +a
 
 MIC_DEVICE="${MIC_DEVICE:-pulse}"
 SND_DEVICE="${SND_DEVICE:-pulse}"
+AWAKE_WAV="${AWAKE_WAV:-assets/sounds/awake.wav}"
 
 if [[ ! -d "$WYOMING_DIR/.git" ]]; then
   echo "Cloning wyoming-satellite into $WYOMING_DIR..."
@@ -51,6 +56,8 @@ else
   echo "Updating wyoming-satellite in $WYOMING_DIR..."
   git -C "$WYOMING_DIR" pull --ff-only
 fi
+
+systemctl --user stop wyoming-satellite 2>/dev/null || true
 
 echo "Setting up Python virtual environment..."
 "$WYOMING_DIR/script/setup"
@@ -73,14 +80,26 @@ USER_ID="$(id -u)"
 mkdir -p "$SERVICE_DIR"
 chmod +x "$ROOT/scripts/audio-duck.sh"
 
+AWAKE_WAV_PATH="$ROOT/$AWAKE_WAV"
+AWAKE_WAV_ARG=""
+if [[ -f "$AWAKE_WAV_PATH" ]]; then
+  AWAKE_WAV_ARG="  --awake-wav '${AWAKE_WAV_PATH}' \\"
+else
+  echo "Warning: wake chime not found at $AWAKE_WAV_PATH (no --awake-wav; silent wake)"
+fi
+
+AWAKE_WAV_ARG_ESCAPED="$(escape_sed_replacement "$AWAKE_WAV_ARG")"
+
 sed \
   -e "s|@@REPO_ROOT@@|$ROOT|g" \
   -e "s|@@WYOMING_DIR@@|$WYOMING_DIR|g" \
   -e "s|@@USER_ID@@|$USER_ID|g" \
   -e "s|@@MIC_DEVICE@@|$MIC_DEVICE|g" \
   -e "s|@@SND_DEVICE@@|$SND_DEVICE|g" \
+  -e "s|@@AWAKE_WAV_ARG@@|${AWAKE_WAV_ARG_ESCAPED}|g" \
   "$TEMPLATE" > "$SERVICE_DIR/$SERVICE_NAME"
 
+systemctl --user unmask wyoming-satellite 2>/dev/null || true
 systemctl --user daemon-reload
 systemctl --user enable --now "$SERVICE_NAME"
 

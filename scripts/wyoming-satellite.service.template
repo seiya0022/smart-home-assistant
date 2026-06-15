@@ -7,7 +7,6 @@ After=network-online.target docker.service
 Type=simple
 Environment=XDG_RUNTIME_DIR=/run/user/@@USER_ID@@
 EnvironmentFile=@@REPO_ROOT@@/.env
-# Future: --awake-wav @@REPO_ROOT@@/assets/awake.wav
 ExecStart=@@WYOMING_DIR@@/script/run \
   --name 'ThinkPad' \
   --uri 'tcp://0.0.0.0:10700' \
@@ -18,6 +17,7 @@ ExecStart=@@WYOMING_DIR@@/script/run \
   --vad \
   --vad-threshold=0.6 \
   --wake-refractory-seconds=8 \
+@@AWAKE_WAV_ARG@@
   --detection-command '@@REPO_ROOT@@/scripts/audio-duck.sh start' \
   --tts-played-command '@@REPO_ROOT@@/scripts/audio-duck.sh stop' \
   --error-command '@@REPO_ROOT@@/scripts/audio-duck.sh stop'
