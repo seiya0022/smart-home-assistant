@@ -120,6 +120,7 @@ Complete the [Home Assistant UI configuration](#home-assistant-ui-configuration)
 │   ├── install-wyoming-satellite.sh
 │   ├── restart-wyoming-satellite.sh
 │   ├── wyoming-satellite-logs.sh
+│   ├── audio-duck.sh
 │   └── detect-audio.sh
 ├── homeassistant/
 │   └── config/
@@ -146,6 +147,39 @@ Complete the [Home Assistant UI configuration](#home-assistant-ui-configuration)
 Home Assistant uses `network_mode: host` to reach smart devices on the LAN. Wyoming services publish ports on `127.0.0.1` for HA to connect.
 
 > **Note:** `wyoming-satellite` runs on the ThinkPad host (not Docker) for stable USB audio hot-plug via PipeWire/Pulse `pulse` device. The upstream [rhasspy/wyoming-satellite](https://github.com/rhasspy/wyoming-satellite) project is deprecated; [Linux Voice Assistant](https://github.com/OHF-Voice/linux-voice-assistant) is the successor. This host install keeps the current Wyoming stack working. You can migrate to ESP32-S3 or LVA later without changing the rest of the stack.
+
+### 音量ダッキング（Hey Jarvis 検出時）
+
+`hey_jarvis` を検出してから Jarvis の返答が終わるまで、音楽・動画など**他アプリの音量だけ**を下げます。Jarvis の TTS（`aplay`）は下げません。
+
+| タイミング | 動作 |
+|-----------|------|
+| ウェイクワード検出 | 他アプリを `DUCK_LEVEL`（デフォルト 20%）に低下 |
+| TTS 再生完了 | 元の音量に復帰 |
+| エラー / タイムアウト（`DUCK_TIMEOUT` 秒） | 元の音量に復帰 |
+
+`.env` で調整できます:
+
+| 変数 | 説明 |
+|------|------|
+| `AUDIO_DUCK_ENABLED` | `1` で有効、`0` で無効 |
+| `DUCK_LEVEL` | 他アプリの音量（例: `20%`） |
+| `DUCK_TIMEOUT` | 自動復元までの秒数（デフォルト `40`） |
+
+前提パッケージ: `pulseaudio-utils`（`pactl` コマンド。PipeWire 環境でも利用可）
+
+```bash
+sudo apt install -y pulseaudio-utils
+```
+
+設定変更後は satellite を再起動してください:
+
+```bash
+./scripts/install-wyoming-satellite.sh   # 初回またはテンプレート変更時
+./scripts/restart-wyoming-satellite.sh # .env のみ変更時
+```
+
+**将来のウェイク音:** `assets/awake.wav` を用意し、`scripts/wyoming-satellite.service.template` のコメントアウトされた `--awake-wav` 行を有効化すると、検出時に「ポン」などの待機音を鳴らせます（現時点では未使用）。
 
 ## Home Assistant UI configuration
 
@@ -209,6 +243,9 @@ Copy `.env.example` to `.env`:
 | `TZ` | Timezone (default `Asia/Tokyo`) |
 | `MIC_DEVICE` | ALSA device for microphone (`pulse` recommended; or `default`, `plughw:...`) |
 | `SND_DEVICE` | ALSA device for speaker output (`pulse` recommended) |
+| `AUDIO_DUCK_ENABLED` | Enable volume ducking for other apps during Assist (`1` / `0`) |
+| `DUCK_LEVEL` | Target volume for ducked apps (e.g. `20%`) |
+| `DUCK_TIMEOUT` | Seconds before auto-restoring volume if Assist does not finish |
 | `MAC_MINI_IP` | Reference IP for Ollama (configured in HA UI) |
 | `OLLAMA_MODEL` | Reference model name (configured in HA UI) |
 

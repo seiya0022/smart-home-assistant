@@ -10,7 +10,7 @@ SERVICE_DIR="$HOME/.config/systemd/user"
 TEMPLATE="$ROOT/scripts/wyoming-satellite.service.template"
 
 missing_packages=()
-for pkg in python3-venv python3-pip alsa-utils; do
+for pkg in python3-venv python3-pip alsa-utils pulseaudio-utils; do
   if ! dpkg -s "$pkg" >/dev/null 2>&1; then
     missing_packages+=("$pkg")
   fi
@@ -71,6 +71,7 @@ fi
 
 USER_ID="$(id -u)"
 mkdir -p "$SERVICE_DIR"
+chmod +x "$ROOT/scripts/audio-duck.sh"
 
 sed \
   -e "s|@@REPO_ROOT@@|$ROOT|g" \
