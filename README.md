@@ -4,32 +4,63 @@ Fully local smart home voice assistant running on Ubuntu (ThinkPad). Home Assist
 
 ## Architecture
 
-```mermaid
-flowchart LR
-  subgraph ubuntu [ThinkPad Ubuntu]
-    Mic[Mic or USB Audio]
-    PW[PipeWire or Pulse]
-    Sat[wyoming-satellite host]
-    Wake[wyoming-openwakeword]
-    STT[wyoming-whisper]
-    TTS[wyoming-piper]
-    HA[Home Assistant]
-    Mic --> PW
-    PW --> Sat
-    Sat -->|"hey_jarvis"| Wake
+### System Architecture
+
+![System Architecture](./assets/images/HomeAssistant_Diagram.png)
+
+<details>
+<summary>Mermaid source code (click to expand)</summary>
+
+```text
+graph TD
+    %% connecting device and と推論サーバーの定義
+    Jabra["Jabra2 75<br>(Microphone + Speaker)"]
+    Mac["M4 Mac Mini<br>Ollama LLM (Qwen2.5:7b)<br>OLLAMA_HOST=0.0.0.0:11434"]
+
+    %% define Thinkpad Ubuntu and its local env
+    subgraph Thinkpad ["Thinkpad (Ubuntu)"]
+        Sat["wyoming-satellite<br>Port: 10700"]
+
+        %% define Docker containers
+        subgraph Docker ["Docker"]
+            HA["HomeAssistant"]
+            Wake["wyoming-OpenWakeWord<br>Port: 10400"]
+            Whisp["whisper<br>Port: 10300"]
+            Piper["wyoming-piper<br>Port: 10200"]
+        end
+    end
+
+    %% 1. 音声入出力（ハードウェア結合）
+    Jabra <--> Sat
+
+    %% 2. WakeWord detection loop
+    Sat -->|Hey Jarvis| Wake
     Wake --> Sat
-    Sat --> STT
-    STT -->|"text"| HA
-    HA -->|"HTTP :11434"| Ollama
-    Ollama -->|"response + HA tools"| HA
-    HA --> TTS
-    TTS --> Sat
-    HA --> Devices[Smart Devices]
-  end
-  subgraph macmini [Mac Mini]
-    Ollama[Ollama LLM]
-  end
+
+    %% 3. 音声データの吸い上げ
+    Sat -->|user voice input| HA
+
+    %% 4. STT pipeline（WhisperへのUターン）
+    HA -->|voice data| Whisp
+    Whisp -->|text data| HA
+
+    %% 5. AI pipeline（Network connection with M4 Mac）
+    HA -->|text user input| Mac
+    Mac -->|text AI output| HA
+
+    %% 6. TTS pipeline（PiperへのUターン）
+    HA -->|text data| Piper
+    Piper -->|voice data| HA
+
+    %% 7. 音声出力ストリーム
+    HA -->|voice AI output| Sat
+
+    %% スタイルの微調整（見た目をシャープにする）
+    classDef default fill:#1e1e2e,stroke:#313244,stroke-width:2px,color:#cdd6f4;
+    classDef highlight fill:#11111b,stroke:#a6e3a1,stroke-width:2px,color:#a6e3a1;
+    class HA,Mac highlight;
 ```
+</details>
 
 **Voice flow**
 
@@ -123,6 +154,8 @@ Complete the [Home Assistant UI configuration](#home-assistant-ui-configuration)
 │   ├── audio-duck.sh
 │   └── detect-audio.sh
 ├── assets/
+│   ├── images/
+│   │   └── HomeAssistant_Diagram.png
 │   └── sounds/
 │       └── awake.wav   # optional wake chime (user-provided, not in git)
 ├── homeassistant/
