@@ -2,8 +2,30 @@
 # List ALSA capture and playback devices for wyoming-satellite configuration.
 set -euo pipefail
 
+echo "=== Recommended (host satellite) ==="
+echo "Use pulse in .env to follow the OS default input/output."
+echo "Switch defaults in GNOME Settings -> Sound when plugging USB audio."
+echo
+echo "Example .env entries:"
+echo "  MIC_DEVICE=pulse"
+echo "  SND_DEVICE=pulse"
+echo
+
+echo "=== OS default devices ==="
+if command -v pactl >/dev/null 2>&1; then
+  echo "Default source (microphone):"
+  pactl get-default-source 2>/dev/null || echo "  (not available)"
+  echo "Default sink (speaker):"
+  pactl get-default-sink 2>/dev/null || echo "  (not available)"
+elif command -v wpctl >/dev/null 2>&1; then
+  wpctl status 2>/dev/null | grep -E 'Default|Audio' || wpctl status
+else
+  echo "pactl/wpctl not found. Install pipewire-pulse or pulseaudio."
+fi
+
+echo
 echo "=== Capture devices (microphones) ==="
-echo "Use a plughw: device name for MIC_DEVICE in .env"
+echo "Use a plughw: device name only if you need fixed ALSA hardware access."
 echo
 if command -v arecord >/dev/null 2>&1; then
   arecord -L | grep -E '^[a-z]|^  ' || arecord -L
@@ -13,7 +35,7 @@ fi
 
 echo
 echo "=== Playback devices (speakers) ==="
-echo "Use a plughw: device name for SND_DEVICE in .env"
+echo "Use a plughw: device name only if you need fixed ALSA hardware access."
 echo
 if command -v aplay >/dev/null 2>&1; then
   aplay -L | grep -E '^[a-z]|^  ' || aplay -L
@@ -22,6 +44,6 @@ else
 fi
 
 echo
-echo "Example .env entries:"
-echo "  MIC_DEVICE=plughw:CARD=PCH,DEV=0"
-echo "  SND_DEVICE=plughw:CARD=PCH,DEV=0"
+echo "=== Test capture with pulse ==="
+echo "  arecord -D pulse -d 2 -f S16_LE -r 16000 test.wav"
+echo "  aplay test.wav"

@@ -1,1 +1,99 @@
-[]
+- id: '1780515552144'
+  alias: play music from spotify
+  description: ''
+  triggers:
+  - trigger: conversation
+    command:
+    - play spotify
+    - open Spotify
+    - play some music
+    - play music
+  conditions: []
+  actions:
+  - action: media_player.select_source
+    metadata: {}
+    target:
+      device_id: 9f82d15da379e0ab7694d0ed8c96db49
+    data:
+      source: seiya-asai-ThinkPad-X1-Carbon-5th
+    alias: Select thinkpad spotify
+    enabled: true
+  - action: media_player.select_source
+    metadata: {}
+    target:
+      device_id: 9f82d15da379e0ab7694d0ed8c96db49
+    data:
+      source: Lenovo Tab M10 FHD Plus
+    alias: Select Lenovo tablet spotify
+    enabled: false
+  - action: media_player.select_source
+    metadata: {}
+    target:
+      device_id: 9f82d15da379e0ab7694d0ed8c96db49
+    data:
+      source: Seiya's Fire TV
+    alias: Select fireTV spotify
+    enabled: false
+  - action: media_player.select_source
+    metadata: {}
+    target:
+      device_id: 9f82d15da379e0ab7694d0ed8c96db49
+    data:
+      source: Seiya’s Mac mini
+    alias: Select Mac mini spotify
+    enabled: false
+  - action: media_player.media_play
+    metadata: {}
+    data: {}
+    target:
+      device_id: 9f82d15da379e0ab7694d0ed8c96db49
+  mode: single
+- id: '1780692557492'
+  alias: to stop spotify
+  description: ''
+  triggers:
+  - trigger: conversation
+    command:
+    - stop
+    - stop the music
+    - pause
+    - pause the music
+    - stop Spotify
+  conditions: []
+  actions:
+  - action: media_player.media_pause
+    metadata: {}
+    data: {}
+    target:
+      device_id: 9f82d15da379e0ab7694d0ed8c96db49
+  mode: single
+- id: '1781428926754'
+  alias: play music from spotify test1
+  description: ''
+  triggers:
+  - trigger: conversation
+    command:
+    - play spotify
+    - open Spotify
+    - play some music
+    - play music
+  conditions: []
+  actions:
+  - action: media_player.select_source
+    metadata: {}
+    target:
+      device_id: 9f82d15da379e0ab7694d0ed8c96db49
+    data:
+      source: seiya-asai-ThinkPad-X1-Carbon-5th
+    alias: Select thinkpad spotify
+    enabled: true
+  - action: media_player.play_media
+    target:
+      device_id: 9f82d15da379e0ab7694d0ed8c96db49
+    data:
+      media:
+        media_content_id: spotify:playlist:37i9dQZF1DXcBWIGo87Zmw
+        media_content_type: playlist
+        metadata: {}
+    alias: 眠っているSpotifyをプレイリストで叩き起こす
+  mode: single
