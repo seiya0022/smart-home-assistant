@@ -22,7 +22,7 @@ This setup is designed for **privacy and local control**: no cloud voice service
 
 ### System diagram
 
-![System Architecture](./assets/images/HomeAssistant_Diagram.png)
+![System Architecture](./assets/images/home-assistant-diagram.png)
 
 <details>
 <summary>Mermaid source (click to expand)</summary>
